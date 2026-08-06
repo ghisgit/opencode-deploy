@@ -29,13 +29,7 @@ else
     useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
 fi
 
-chown "$PUID:$PGID" "$HOME_DIR"
-chown -R "$PUID:$PGID" \
-    "$HOME_DIR/.config/opencode" \
-    "$HOME_DIR/.local/share/opencode" \
-    "$HOME_DIR/.local/state/opencode" \
-    "$HOME_DIR/.cache/opencode" \
-    "$WORKSPACE"
+chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE"
 
 export HOME="$HOME_DIR"
 exec gosu "$PUID:$PGID" /usr/local/bin/opencode "$@"
