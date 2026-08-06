@@ -5,15 +5,14 @@ PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 OPENCODE_USER="${OPENCODE_USER:-opencode}"
 HOME_DIR="${HOME:-/data}"
-WORKSPACE="${WORKSPACE:-/workspace}"
+WORKSPACE="/workspace"
 
 mkdir -p \
     "$HOME_DIR" \
     "$HOME_DIR/.config/opencode" \
     "$HOME_DIR/.local/share/opencode" \
     "$HOME_DIR/.local/state/opencode" \
-    "$HOME_DIR/.cache/opencode" \
-    "$WORKSPACE"
+    "$HOME_DIR/.cache/opencode"
 
 if [ "$(id -u)" != "0" ]; then
     exec opencode "$@"
