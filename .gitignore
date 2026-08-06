@@ -1,0 +1,8 @@
+.env
+data/*
+!data/.gitkeep
+opencode/*
+!opencode/.gitkeep
+workspace/*
+!workspace/.gitkeep
+*.tar

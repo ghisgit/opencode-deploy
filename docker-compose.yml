@@ -1,0 +1,33 @@
+services:
+  opencode:
+    build:
+      context: .
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
+    image: opencode:local
+    container_name: opencode
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${PORT:-4096}:${PORT:-4096}"
+    env_file:
+      - .env
+    environment:
+      # PORT is passed explicitly so the Dockerfile HEALTHCHECK and the
+      # compose command stay in sync with the .env value.
+      PORT: ${PORT:-4096}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      OPENCODE_SERVER_USERNAME: ${OPENCODE_SERVER_USERNAME:-opencode}
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:-}
+    volumes:
+      - ./entrypoint.sh:/entrypoint.sh:ro
+      # Only opencode's own data dirs are persisted; everything else under
+      # /data (HOME) is ephemeral container layer.
+      - ${DATA_DIR:-./opencode}/config:/data/.config/opencode
+      - ${DATA_DIR:-./opencode}/share:/data/.local/share/opencode
+      - ${DATA_DIR:-./opencode}/state:/data/.local/state/opencode
+      - ${DATA_DIR:-./opencode}/cache:/data/.cache/opencode
+      - ${WORKSPACE:-./workspace}:/workspace
+    working_dir: /workspace
+    command: ["web", "--hostname", "0.0.0.0", "--port", "${PORT:-4096}"]
