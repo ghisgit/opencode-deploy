@@ -1,0 +1,13 @@
+# Template for docker-compose.override.yml.
+# Copy to docker-compose.override.yml and adjust the per-file mounts:
+#   cp docker-compose.override.example.yml docker-compose.override.yml
+# docker compose auto-merges the override file with docker-compose.yml,
+# so the base file stays untouched.
+#
+# Do NOT mount the whole data/ directory over /data; mount individual files.
+# Add one volume line per file. Drop the :ro suffix for files the container
+# must be able to write.
+services:
+  opencode:
+    volumes:
+      - ./data/.gitconfig:/data/.gitconfig:ro
