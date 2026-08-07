@@ -28,9 +28,15 @@ RUN apt-get update \
 
 ARG OPENCODE_VERSION=latest
 ARG INSTALL_GITHUB_MIRROR=
-RUN mkdir -p /opt/opencode \
+RUN set -eux; \
+    case "$(uname -m)" in \
+        x86_64) opencode_arch="x64" ;; \
+        aarch64) opencode_arch="arm64" ;; \
+        *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    mkdir -p /opt/opencode \
     && curl -fsSL -o /opt/opencode/opencode.tar.gz \
-        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-x64.tar.gz" \
+        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-${opencode_arch}.tar.gz" \
     && tar -xzf /opt/opencode/opencode.tar.gz -C /opt/opencode \
     && install -m 0755 /opt/opencode/opencode /usr/local/bin/opencode \
     && rm -rf /opt/opencode \

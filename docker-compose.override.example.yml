@@ -14,6 +14,19 @@
 # (e.g. under /etc or /opt).
 services:
   opencode:
+    # Build locally from ./Dockerfile instead of pulling the prebuilt GHCR
+    # image. Comment out `build`/`image` to fall back to the prebuilt image.
+    # Build args come from .env (see .env.example).
+    build:
+      context: .
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
+        GH_INSTALL_VERSION: ${GH_INSTALL_VERSION:-false}
+        UV_INSTALL_VERSION: ${UV_INSTALL_VERSION:-false}
+        INSTALL_GITHUB_MIRROR: ${INSTALL_GITHUB_MIRROR:-}
+        APT_INSTALL_MIRROR: ${APT_INSTALL_MIRROR:-}
+        CPP_INSTALL: ${CPP_INSTALL:-false}
+    image: opencode:local
     volumes:
       # Writable config under /data (no :ro suffix — required by entrypoint).
       - ./data/.npmrc:/data/.npmrc
