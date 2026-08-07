@@ -2,6 +2,16 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Optional apt mirror (hostname only, e.g. mirrors.aliyun.com).
+# Replaces deb.debian.org in every apt source so the base and CPP installs
+# below use the mirror. Empty = official Debian sources.
+ARG APT_INSTALL_MIRROR=
+RUN if [ -n "$APT_INSTALL_MIRROR" ]; then \
+        for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do \
+            [ -f "$f" ] && sed -i "s|deb.debian.org|${APT_INSTALL_MIRROR}|g" "$f"; \
+        done; \
+    fi
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
