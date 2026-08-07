@@ -66,6 +66,21 @@ RUN set -eux; \
         rm -rf /tmp/uv.tgz "/tmp/uv-${uv_triple}"; \
     fi
 
+# Optional C/C++ toolchain at build time, gated by CPP_INSTALL:
+#   false | minimal | standard | full | true
+ARG CPP_INSTALL=false
+RUN if [ "$CPP_INSTALL" != "false" ]; then \
+        case "$CPP_INSTALL" in \
+            minimal)   pkgs="build-essential" ;; \
+            standard)  pkgs="build-essential gdb cmake ninja-build pkg-config" ;; \
+            true|full) pkgs="build-essential gdb cmake ninja-build pkg-config clang clangd llvm clang-tidy" ;; \
+            *) echo "unsupported CPP_INSTALL: $CPP_INSTALL" >&2; exit 1 ;; \
+        esac; \
+        apt-get update \
+        && apt-get install -y --no-install-recommends $pkgs \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
+
 WORKDIR /workspace
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/" || exit 1

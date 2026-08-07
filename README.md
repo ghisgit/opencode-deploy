@@ -65,6 +65,11 @@ GitHub CLI (`gh`) and `uv`/`uvx` into the image at build time (`/usr/local/bin`,
 so they are on `PATH`). Each accepts `false` (skip, the default), `latest`, or a
 pinned version such as `v2.97.0` or `0.12.2`. `INSTALL_GITHUB_MIRROR` prefixes
 the download URLs (e.g. `https://ghproxy.com/`); leave empty for direct GitHub.
+
+`CPP_INSTALL` chooses how much of a C/C++ toolchain is baked in: `false` (none,
+default), `minimal` (gcc/g++/make), `standard` (plus gdb/cmake/ninja/pkg-config),
+or `full`/`true` (plus clang/clangd/llvm/clang-tidy). Unknown values fail the build.
+
 Because these are build-time, set them **before** `docker compose build` /
 `Dev Containers: Rebuild Container`.
 
@@ -127,3 +132,4 @@ running as `root`.
 | `GH_INSTALL_VERSION` | `false` | Bake GitHub CLI into the image: `false`, `latest`, or a pinned version like `v2.97.0` |
 | `UV_INSTALL_VERSION` | `false` | Bake `uv`/`uvx` into the image: `false`, `latest`, or a pinned version like `0.12.2` |
 | `INSTALL_GITHUB_MIRROR` | empty | Prefix for the build download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |
+| `CPP_INSTALL` | `false` | C/C++ toolchain tier at build time: `false`, `minimal`, `standard`, or `full`/`true` |
