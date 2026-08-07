@@ -1,0 +1,105 @@
+name: build-image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      OPENCODE_VERSION:
+        description: opencode version to install (latest or pinned, e.g. v1.18.15)
+        required: false
+        default: latest
+      GH_INSTALL_VERSION:
+        description: GitHub CLI install (false, latest, or pinned like v2.97.0)
+        required: false
+        default: latest
+      UV_INSTALL_VERSION:
+        description: uv/uvx install (false, latest, or pinned like 0.12.2)
+        required: false
+        default: latest
+      CPP_INSTALL:
+        description: C/C++ toolchain tier (false, minimal, standard, full)
+        required: false
+        default: full
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/ghisgit/opencode-deploy
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest
+
+      - name: Build and push multi-arch latest
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
+            UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            INSTALL_GITHUB_MIRROR=
+            APT_INSTALL_MIRROR=
+            CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push amd64 tag
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}:latest-amd64
+          build-args: |
+            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
+            UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            INSTALL_GITHUB_MIRROR=
+            APT_INSTALL_MIRROR=
+            CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
+          cache-from: type=gha
+
+      - name: Build and push arm64 tag
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ env.IMAGE }}:latest-arm64
+          build-args: |
+            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
+            UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            INSTALL_GITHUB_MIRROR=
+            APT_INSTALL_MIRROR=
+            CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
+          cache-from: type=gha

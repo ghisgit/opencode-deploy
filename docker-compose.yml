@@ -1,10 +1,9 @@
 services:
   opencode:
-    build:
-      context: .
-      args:
-        OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
-    image: opencode:local
+    # Prebuilt multi-arch image from GHCR (amd64 + arm64). To build locally from
+    # ./Dockerfile with your .env build args, use docker-compose.override.yml
+    # (see docker-compose.override.example.yml).
+    image: ghcr.io/ghisgit/opencode-deploy:latest
     container_name: opencode
     restart: unless-stopped
     init: true
