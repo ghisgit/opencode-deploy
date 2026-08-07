@@ -4,7 +4,7 @@ set -euo pipefail
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 OPENCODE_USER="${OPENCODE_USER:-opencode}"
-HOME_DIR="${HOME:-/data}"
+HOME_DIR="/data"
 WORKSPACE="/workspace"
 
 mkdir -p \
@@ -30,5 +30,4 @@ fi
 
 chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE"
 
-export HOME="$HOME_DIR"
 exec gosu "$PUID:$PGID" /usr/local/bin/opencode "$@"

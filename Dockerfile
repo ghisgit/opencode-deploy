@@ -25,8 +25,7 @@ RUN mkdir -p /opt/opencode \
     && rm -rf /opt/opencode \
     && opencode --version
 
-ENV HOME=/data \
-    BROWSER=true
+ENV BROWSER=true
 
 WORKDIR /workspace
 
