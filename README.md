@@ -70,6 +70,24 @@ while runtime state under `opencode/` is git-ignored.
 The container healthcheck probes the web server; the status is shown as
 `(healthy)` in `docker ps`.
 
+## VS Code Dev Container
+
+A `.devcontainer/devcontainer.json` is provided so you can develop inside the
+same container with VS Code:
+
+1. Copy and adjust `.env` as above.
+2. Do **not** run `docker compose up` yourself — `docker-compose.yml` fixes the
+   container name (`container_name: opencode`), which would conflict with the
+   Dev Containers-managed instance. If a manual stack is running, stop it first
+   with `docker compose down`.
+3. Run **Dev Containers: Reopen in Container** from a VS Code window opened on
+   this folder.
+
+The devcontainer reuses `docker-compose.yml` directly, so `PUID`/`PGID`, the
+`data/` mount points and the entrypoint are identical. VS Code attaches as the
+`opencode` user (created by `entrypoint.sh`), which writes to `/data` and
+`/workspace` with the mapped ownership instead of running as `root`.
+
 ## Configuration (`.env`)
 
 | Variable | Default | Description |

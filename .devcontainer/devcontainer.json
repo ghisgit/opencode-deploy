@@ -1,0 +1,16 @@
+{
+  "name": "opencode",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "opencode",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "opencode",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
