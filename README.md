@@ -58,6 +58,16 @@ exist.
 Files in `data/` are committed to git (only `.gitkeep` is tracked by default),
 while runtime state under `opencode/` is git-ignored.
 
+## Optional tools baked into the image
+
+Set `GH_INSTALL_VERSION` and/or `UV_INSTALL_VERSION` in `.env` to install the
+GitHub CLI (`gh`) and `uv`/`uvx` into the image at build time (`/usr/local/bin`,
+so they are on `PATH`). Each accepts `false` (skip, the default), `latest`, or a
+pinned version such as `v2.97.0` or `0.12.2`. `INSTALL_GITHUB_MIRROR` prefixes
+the download URLs (e.g. `https://ghproxy.com/`); leave empty for direct GitHub.
+Because these are build-time, set them **before** `docker compose build` /
+`Dev Containers: Rebuild Container`.
+
 ## Getting started
 
 1. Copy and adjust the environment file:
@@ -114,3 +124,6 @@ running as `root`.
 | `DATA_DIR` | `./opencode` | Host directory holding opencode's persisted data |
 | `WORKSPACE` | `./workspace` | Host directory mounted at `/workspace` |
 | `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` | `opencode` / empty | Web server auth (empty password = unsecured) |
+| `GH_INSTALL_VERSION` | `false` | Bake GitHub CLI into the image: `false`, `latest`, or a pinned version like `v2.97.0` |
+| `UV_INSTALL_VERSION` | `false` | Bake `uv`/`uvx` into the image: `false`, `latest`, or a pinned version like `0.12.2` |
+| `INSTALL_GITHUB_MIRROR` | empty | Prefix for the build download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |

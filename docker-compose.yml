@@ -4,6 +4,9 @@ services:
       context: .
       args:
         OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
+        GH_INSTALL_VERSION: ${GH_INSTALL_VERSION:-false}
+        UV_INSTALL_VERSION: ${UV_INSTALL_VERSION:-false}
+        INSTALL_GITHUB_MIRROR: ${INSTALL_GITHUB_MIRROR:-}
     image: opencode:local
     container_name: opencode
     restart: unless-stopped
