@@ -34,11 +34,21 @@ cp docker-compose.override.example.yml docker-compose.override.yml
 services:
   opencode:
     volumes:
-      - ./data/.gitconfig:/data/.gitconfig:ro
+      # Writable config under /data (no :ro suffix — required by entrypoint).
+      - ./data/.gitconfig:/data/.gitconfig
+      # Read-only files: mount outside /data, never under it.
+      - ./data/global-ignores:/etc/gitconfig.d/ignores:ro
 ```
 
-Add one volume line per file. Drop the `:ro` suffix for files the container
-must be able to write.
+Add one volume line per file.
+
+> **Warning — do not mount read-only (`:ro`) files into `/data`.** The
+> `entrypoint.sh` runs `chown -R` over `/data` on every start. A read-only bind
+> mount there makes that `chown` fail, the entrypoint exits non-zero, and
+> because `docker-compose.yml` sets `restart: unless-stopped`, the container
+> restarts, fails again, and loops forever. Mount files the container only
+> needs to read elsewhere (e.g. under `/etc` or `/opt`) instead of under
+> `/data`; anything mounted under `/data` must remain writable.
 
 `docker-compose.override.yml` is git-ignored (it references personal files such
 as `data/.gitconfig`, which are not tracked), so adjust it locally. Create the
@@ -69,6 +79,30 @@ while runtime state under `opencode/` is git-ignored.
 
 The container healthcheck probes the web server; the status is shown as
 `(healthy)` in `docker ps`.
+
+## VS Code Dev Container
+
+A `.devcontainer/devcontainer.json` is provided so you can develop inside the
+same container with VS Code:
+
+1. Copy and adjust `.env` as above.
+2. Make sure `docker-compose.override.yml` exists — `.devcontainer/devcontainer.json`
+   now lists it in `dockerComposeFile`, so its mounts (your `data/` files) are
+   merged into the dev container too. Create it from the template if you have not:
+   `cp docker-compose.override.example.yml docker-compose.override.yml`. If the
+   file is missing, reopening in a container fails.
+3. Do **not** run `docker compose up` yourself — `docker-compose.yml` fixes the
+   container name (`container_name: opencode`), which would conflict with the
+   Dev Containers-managed instance. If a manual stack is running, stop it first
+   with `docker compose down`.
+4. Run **Dev Containers: Reopen in Container** from a VS Code window opened on
+   this folder.
+
+The devcontainer reuses `docker-compose.yml` and `docker-compose.override.yml`
+directly, so `PUID`/`PGID`, the `data/` mount points and the entrypoint are
+identical. VS Code attaches as the `opencode` user (created by `entrypoint.sh`),
+which writes to `/data` and `/workspace` with the mapped ownership instead of
+running as `root`.
 
 ## Configuration (`.env`)
 
