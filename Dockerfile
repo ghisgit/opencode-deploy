@@ -27,9 +27,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 ARG OPENCODE_VERSION=latest
+ARG INSTALL_GITHUB_MIRROR=
 RUN mkdir -p /opt/opencode \
     && curl -fsSL -o /opt/opencode/opencode.tar.gz \
-        "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-x64.tar.gz" \
+        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-x64.tar.gz" \
     && tar -xzf /opt/opencode/opencode.tar.gz -C /opt/opencode \
     && install -m 0755 /opt/opencode/opencode /usr/local/bin/opencode \
     && rm -rf /opt/opencode \
@@ -40,6 +41,8 @@ ENV BROWSER=true
 # Optional GitHub CLI (gh) and uv/uvx installs at build time.
 # Values are controlled via build args from .env:
 #   false | latest | pinned version (gh keeps v, uv strips leading v).
+# INSTALL_GITHUB_MIRROR (prepended to download URLs) is declared above so the
+# opencode download also uses it; it is re-declared here for this RUN scope.
 ARG GH_INSTALL_VERSION=false
 ARG UV_INSTALL_VERSION=false
 ARG INSTALL_GITHUB_MIRROR=

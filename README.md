@@ -64,7 +64,8 @@ Set `GH_INSTALL_VERSION` and/or `UV_INSTALL_VERSION` in `.env` to install the
 GitHub CLI (`gh`) and `uv`/`uvx` into the image at build time (`/usr/local/bin`,
 so they are on `PATH`). Each accepts `false` (skip, the default), `latest`, or a
 pinned version such as `v2.97.0` or `0.12.2`. `INSTALL_GITHUB_MIRROR` prefixes
-the download URLs (e.g. `https://ghproxy.com/`); leave empty for direct GitHub.
+the download URLs for opencode, gh and uv (e.g. `https://ghproxy.com/`); leave
+empty for direct GitHub.
 `APT_INSTALL_MIRROR` (hostname only, e.g. `mirrors.aliyun.com`) replaces
 `deb.debian.org` in the apt sources so the base and C/C++ installs use that
 mirror; empty keeps the official Debian sources.
@@ -134,6 +135,6 @@ running as `root`.
 | `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` | `opencode` / empty | Web server auth (empty password = unsecured) |
 | `GH_INSTALL_VERSION` | `false` | Bake GitHub CLI into the image: `false`, `latest`, or a pinned version like `v2.97.0` |
 | `UV_INSTALL_VERSION` | `false` | Bake `uv`/`uvx` into the image: `false`, `latest`, or a pinned version like `0.12.2` |
-| `INSTALL_GITHUB_MIRROR` | empty | Prefix for the build download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |
+| `INSTALL_GITHUB_MIRROR` | empty | Prefix prepended to the opencode/gh/uv download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |
 | `APT_INSTALL_MIRROR` | empty | apt mirror hostname replacing `deb.debian.org` (e.g. `mirrors.aliyun.com`); empty = official sources |
 | `CPP_INSTALL` | `false` | C/C++ toolchain tier at build time: `false`, `minimal`, `standard`, or `full`/`true` |
