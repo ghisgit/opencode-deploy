@@ -23,6 +23,7 @@ RUN apt-get update \
         procps \
         ripgrep \
         tar \
+        unzip \
         xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
@@ -83,6 +84,33 @@ RUN set -eux; \
         install -m 0755 "/tmp/uv-${uv_triple}/uv" /usr/local/bin/uv; \
         install -m 0755 "/tmp/uv-${uv_triple}/uvx" /usr/local/bin/uvx; \
         rm -rf /tmp/uv.tgz "/tmp/uv-${uv_triple}"; \
+    fi
+
+# Optional Fast Node Manager (fnm) at build time, gated by FNM_INSTALL_VERSION:
+#   false | latest | pinned version (keeps v, e.g. v1.39.0).
+# Re-declare INSTALL_GITHUB_MIRROR for this RUN scope (declared above for the
+# opencode download).
+ARG FNM_INSTALL_VERSION=false
+ARG INSTALL_GITHUB_MIRROR=
+RUN set -eux; \
+    case "$(uname -m)" in \
+        x86_64) fnm_asset="fnm-linux" ;; \
+        aarch64) fnm_asset="fnm-arm64" ;; \
+        *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
+    esac; \
+    if [ "$FNM_INSTALL_VERSION" != "false" ]; then \
+        if [ "$FNM_INSTALL_VERSION" = "latest" ]; then \
+            tag="$(curl -fsSL "${INSTALL_GITHUB_MIRROR}https://api.github.com/repos/Schniz/fnm/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"; \
+        else \
+            tag="$FNM_INSTALL_VERSION"; \
+            case "$tag" in v*) ;; *) tag="v${tag}";; esac; \
+        fi; \
+        curl -fsSL -o /tmp/fnm.zip "${INSTALL_GITHUB_MIRROR}https://github.com/Schniz/fnm/releases/download/${tag}/${fnm_asset}.zip"; \
+        mkdir -p /tmp/fnm; \
+        unzip -q /tmp/fnm.zip -d /tmp/fnm; \
+        install -m 0755 "$(find /tmp/fnm -type f -name fnm | head -n1)" /usr/local/bin/fnm; \
+        rm -rf /tmp/fnm.zip /tmp/fnm; \
+        fnm --version; \
     fi
 
 # Optional C/C++ toolchain at build time, gated by CPP_INSTALL:

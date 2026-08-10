@@ -19,6 +19,10 @@ on:
         description: uv/uvx install (false, latest, or pinned like 0.12.2)
         required: false
         default: latest
+      FNM_INSTALL_VERSION:
+        description: Fast Node Manager install (false, latest, or pinned like v1.39.0)
+        required: false
+        default: latest
       CPP_INSTALL:
         description: C/C++ toolchain tier (false, minimal, standard, full)
         required: false
@@ -99,6 +103,7 @@ jobs:
             OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            FNM_INSTALL_VERSION=${{ inputs.FNM_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
             APT_INSTALL_MIRROR=
             CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
@@ -117,6 +122,7 @@ jobs:
             OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            FNM_INSTALL_VERSION=${{ inputs.FNM_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
             APT_INSTALL_MIRROR=
             CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
@@ -134,6 +140,7 @@ jobs:
             OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
+            FNM_INSTALL_VERSION=${{ inputs.FNM_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
             APT_INSTALL_MIRROR=
             CPP_INSTALL=${{ inputs.CPP_INSTALL || 'full' }}
