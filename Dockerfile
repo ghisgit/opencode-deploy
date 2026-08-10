@@ -36,7 +36,7 @@ RUN set -eux; \
     esac; \
     mkdir -p /opt/opencode \
     && curl -fsSL -o /opt/opencode/opencode.tar.gz \
-        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-${opencode_arch}.tar.gz" \
+        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-${opencode_arch}.tar.gz" \
     && tar -xzf /opt/opencode/opencode.tar.gz -C /opt/opencode \
     && install -m 0755 /opt/opencode/opencode /usr/local/bin/opencode \
     && rm -rf /opt/opencode \
