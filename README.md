@@ -60,12 +60,13 @@ while runtime state under `opencode/` is git-ignored.
 
 ## Optional tools baked into the image
 
-Set `GH_INSTALL_VERSION` and/or `UV_INSTALL_VERSION` in `.env` to install the
-GitHub CLI (`gh`) and `uv`/`uvx` into the image at build time (`/usr/local/bin`,
-so they are on `PATH`). Each accepts `false` (skip, the default), `latest`, or a
-pinned version such as `v2.97.0` or `0.12.2`. `INSTALL_GITHUB_MIRROR` prefixes
-the download URLs for opencode, gh and uv (e.g. `https://ghproxy.com/`); leave
-empty for direct GitHub.
+Set `GH_INSTALL_VERSION`, `UV_INSTALL_VERSION` and/or `FNM_INSTALL_VERSION` in
+`.env` to install the GitHub CLI (`gh`), `uv`/`uvx`, and the Fast Node Manager
+(`fnm`) into the image at build time (`/usr/local/bin`, so they are on `PATH`).
+Each accepts `false` (skip, the default), `latest`, or a pinned version such as
+`v2.97.0` or `0.12.2`. `gh` and `fnm` keep the `v` prefix; `uv` strips it.
+`INSTALL_GITHUB_MIRROR` prefixes the download URLs for opencode, gh, uv and fnm
+(e.g. `https://ghproxy.com/`); leave empty for direct GitHub.
 `APT_INSTALL_MIRROR` (hostname only, e.g. `mirrors.aliyun.com`) replaces
 `deb.debian.org` in the apt sources so the base and C/C++ installs use that
 mirror; empty keeps the official Debian sources.
@@ -77,7 +78,7 @@ or `full`/`true` (plus clang/clangd/llvm/clang-tidy). Unknown values fail the bu
 Because these are build-time, set them **before** `docker compose build` /
 `Dev Containers: Rebuild Container`. They only apply when building locally via
 the `docker-compose.override.yml` build block (see below) — the prebuilt GHCR
-image is already baked with `latest`/`latest`/`latest`/`full`.
+image is already baked with `latest`/`latest`/`latest`/`latest`/`full`.
 
 ## Prebuilt images (GitHub Actions)
 
@@ -90,18 +91,18 @@ and published to GHCR as `ghcr.io/ghisgit/opencode-deploy`:
   gets the arm64 one). Single-arch tags are also published for explicit use:
   `latest-amd64` and `latest-arm64`.
 - **Baked defaults**: `OPENCODE_VERSION=latest`, `GH_INSTALL_VERSION=latest`,
-  `UV_INSTALL_VERSION=latest`, `CPP_INSTALL=full`. apt/GitHub mirrors are left
-  empty (direct official sources).
+  `UV_INSTALL_VERSION=latest`, `FNM_INSTALL_VERSION=latest`, `CPP_INSTALL=full`.
+  apt/GitHub mirrors are left empty (direct official sources).
 - **Triggers**: every push to `main`, a daily check at **02:00 UTC** (schedule),
   plus a manual **Run workflow** button on the Actions page (where you can
-  override any of the four build variables). Each run also tags `sha-<commit>` so
+  override any of the five build variables). Each run also tags `sha-<commit>` so
   you can pin to a specific build.
 - **Version tags**: the multi-arch build is tagged with the resolved opencode
   version without the `v` prefix (e.g. `1.18.15`), so you can pin an image to a
   specific opencode release. The version is resolved deterministically before
   building: `latest` is looked up via the GitHub API, and a pinned input missing
   the `v` prefix gets one added, so the download URL
-  `/releases/vX/download/` stays correct.
+  `/releases/download/vX/` stays correct.
 - **Scheduled runs skip if already published**: the 02:00 UTC check first inspects
   GHCR for the resolved version tag and, if it already exists, skips the build
   (no new opencode release → no new image). Push/manual runs always build.
@@ -180,9 +181,10 @@ running as `root`.
 
 `PORT`, `PUID`/`PGID`, `DATA_DIR`, `WORKSPACE` and the auth vars are used at
 runtime by every deployment. The build-time vars (`OPENCODE_VERSION`,
-`GH_INSTALL_VERSION`, `UV_INSTALL_VERSION`, `INSTALL_GITHUB_MIRROR`,
-`APT_INSTALL_MIRROR`, `CPP_INSTALL`) only affect **local** builds via
-`docker-compose.override.yml` — they are ignored when using the prebuilt image.
+`GH_INSTALL_VERSION`, `UV_INSTALL_VERSION`, `FNM_INSTALL_VERSION`,
+`INSTALL_GITHUB_MIRROR`, `APT_INSTALL_MIRROR`, `CPP_INSTALL`) only affect
+**local** builds via `docker-compose.override.yml` — they are ignored when using
+the prebuilt image.
 
 | Variable | Default | Description |
 |---|---|---|
@@ -194,6 +196,7 @@ runtime by every deployment. The build-time vars (`OPENCODE_VERSION`,
 | `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` | `opencode` / empty | Web server auth (empty password = unsecured) |
 | `GH_INSTALL_VERSION` | `false` | Bake GitHub CLI into the image: `false`, `latest`, or a pinned version like `v2.97.0` |
 | `UV_INSTALL_VERSION` | `false` | Bake `uv`/`uvx` into the image: `false`, `latest`, or a pinned version like `0.12.2` |
-| `INSTALL_GITHUB_MIRROR` | empty | Prefix prepended to the opencode/gh/uv download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |
+| `FNM_INSTALL_VERSION` | `false` | Bake the Fast Node Manager into the image: `false`, `latest`, or a pinned version like `v1.39.0` |
+| `INSTALL_GITHUB_MIRROR` | empty | Prefix prepended to the opencode/gh/uv/fnm download URLs (e.g. `https://ghproxy.com/`); empty = direct GitHub |
 | `APT_INSTALL_MIRROR` | empty | apt mirror hostname replacing `deb.debian.org` (e.g. `mirrors.aliyun.com`); empty = official sources |
 | `CPP_INSTALL` | `false` | C/C++ toolchain tier at build time: `false`, `minimal`, `standard`, or `full`/`true` |
