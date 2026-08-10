@@ -102,6 +102,11 @@ RUN if [ "$CPP_INSTALL" != "false" ]; then \
 
 WORKDIR /workspace
 
+# Bake the entrypoint into the image (not a runtime bind mount), so local and
+# CI builds both ship the entrypoint from the current tree.
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/" || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

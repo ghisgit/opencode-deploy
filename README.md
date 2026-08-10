@@ -10,7 +10,7 @@ running in web mode, with persistent data on the host.
 | `opencode/` | `/data/.config/opencode`, `/data/.local/share/opencode`, `/data/.local/state/opencode`, `/data/.cache/opencode` | opencode's own persisted data (config, sessions, logs, cache) |
 | `data/` | file-by-file mounts (see below) | other project files you want available in the container home |
 | `workspace/` | `/workspace` | working directory for the web session |
-| `entrypoint.sh` | `/entrypoint.sh` | creates home dirs, maps `PUID`/`PGID` user, fixes ownership, drops privileges |
+| `entrypoint.sh` | `/entrypoint.sh` | creates home dirs, maps `PUID`/`PGID` user, fixes ownership, drops privileges (baked into the image at build time — changing it requires a rebuild) |
 | `docker-compose.override.example.yml` | — | template for `docker-compose.override.yml` (git-ignored): local `build` block + per-file data mounts |
 
 ## Persisting files into the container home (`/data`)
@@ -92,9 +92,19 @@ and published to GHCR as `ghcr.io/ghisgit/opencode-deploy`:
 - **Baked defaults**: `OPENCODE_VERSION=latest`, `GH_INSTALL_VERSION=latest`,
   `UV_INSTALL_VERSION=latest`, `CPP_INSTALL=full`. apt/GitHub mirrors are left
   empty (direct official sources).
-- **Triggers**: every push to `main`, plus a manual **Run workflow** button on
-  the Actions page (where you can override any of the four build variables).
-  Each run also tags `sha-<commit>` so you can pin to a specific build.
+- **Triggers**: every push to `main`, a daily check at **02:00 UTC** (schedule),
+  plus a manual **Run workflow** button on the Actions page (where you can
+  override any of the four build variables). Each run also tags `sha-<commit>` so
+  you can pin to a specific build.
+- **Version tags**: the multi-arch build is tagged with the resolved opencode
+  version without the `v` prefix (e.g. `1.18.15`), so you can pin an image to a
+  specific opencode release. The version is resolved deterministically before
+  building: `latest` is looked up via the GitHub API, and a pinned input missing
+  the `v` prefix gets one added, so the download URL
+  `/releases/vX/download/` stays correct.
+- **Scheduled runs skip if already published**: the 02:00 UTC check first inspects
+  GHCR for the resolved version tag and, if it already exists, skips the build
+  (no new opencode release → no new image). Push/manual runs always build.
 
 The default `docker-compose.yml` pulls `ghcr.io/ghisgit/opencode-deploy:latest`,
 so a plain `docker compose up -d` needs no local build.

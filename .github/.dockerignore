@@ -1,0 +1,12 @@
+.env
+.env.*
+.git
+.github
+data
+opencode
+workspace
+docker-compose.yml
+docker-compose.override*.yml
+README.md
+.gitignore
+*.tar

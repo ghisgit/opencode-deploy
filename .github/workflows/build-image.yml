@@ -3,6 +3,8 @@ name: build-image
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: "0 2 * * *"
   workflow_dispatch:
     inputs:
       OPENCODE_VERSION:
@@ -46,6 +48,33 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Resolve opencode version
+        id: resolve
+        shell: bash
+        run: |
+          version="${{ inputs.OPENCODE_VERSION || 'latest' }}"
+          if [ "$version" = "latest" ]; then
+            tag="$(gh api repos/anomalyco/opencode/releases/latest --jq .tag_name)"
+          else
+            tag="$version"
+            case "$tag" in v*) ;; *) tag="v${tag}";; esac
+          fi
+          echo "resolved=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if version already published
+        id: skip
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          if docker buildx imagetools inspect "${IMAGE}:${{ steps.resolve.outputs.version }}" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          IMAGE: ${{ env.IMAGE }}
+
       - name: Image metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -54,8 +83,10 @@ jobs:
           tags: |
             type=sha,prefix=sha-,format=short
             type=raw,value=latest
+            type=raw,value=${{ steps.resolve.outputs.version }}
 
       - name: Build and push multi-arch latest
+        if: steps.skip.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -63,7 +94,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
@@ -73,6 +104,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build and push amd64 tag
+        if: steps.skip.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -80,7 +112,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:latest-amd64
           build-args: |
-            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
@@ -89,6 +121,7 @@ jobs:
           cache-from: type=gha
 
       - name: Build and push arm64 tag
+        if: steps.skip.outputs.skip != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -96,7 +129,7 @@ jobs:
           push: true
           tags: ${{ env.IMAGE }}:latest-arm64
           build-args: |
-            OPENCODE_VERSION=${{ inputs.OPENCODE_VERSION || 'latest' }}
+            OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
             GH_INSTALL_VERSION=${{ inputs.GH_INSTALL_VERSION || 'latest' }}
             UV_INSTALL_VERSION=${{ inputs.UV_INSTALL_VERSION || 'latest' }}
             INSTALL_GITHUB_MIRROR=
