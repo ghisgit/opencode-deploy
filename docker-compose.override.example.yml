@@ -33,5 +33,8 @@ services:
       - ./data/.npmrc:/data/.npmrc
       - ./data/.gitconfig:/data/.gitconfig
       # Read-only files: mount outside /data, never under it.
-      - ./data/global-ignores:/etc/gitconfig.d/ignores:ro
-      - ./:/workspace
+      - ./data/custom.sh:/etc/profile.d/custom.sh:ro
+
+      # Whole-repo bind mount for local development (repo files appear at
+      # /workspace/opencode-deploy inside the container).
+      - ./:/workspace/opencode-deploy

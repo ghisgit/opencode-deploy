@@ -23,9 +23,9 @@ if ! getent group "$PGID" > /dev/null 2>&1; then
 fi
 
 if id "$OPENCODE_USER" > /dev/null 2>&1; then
-    usermod -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
+    usermod -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
 else
-    useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
+    useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
 fi
 
 chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE"
