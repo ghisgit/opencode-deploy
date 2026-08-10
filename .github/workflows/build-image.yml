@@ -50,6 +50,8 @@ jobs:
 
       - name: Resolve opencode version
         id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           version="${{ inputs.OPENCODE_VERSION || 'latest' }}"
