@@ -45,19 +45,20 @@ RUN set -eux; \
 
 ENV BROWSER=true
 
-# Optional GitHub CLI (gh) and uv/uvx installs at build time.
+# Optional GitHub CLI (gh), uv/uvx, and fnm installs at build time.
 # Values are controlled via build args from .env:
-#   false | latest | pinned version (gh keeps v, uv strips leading v).
+#   false | latest | pinned version (gh and fnm keep v, uv strips leading v).
 # INSTALL_GITHUB_MIRROR (prepended to download URLs) is declared above so the
 # opencode download also uses it; it is re-declared here for this RUN scope.
 ARG GH_INSTALL_VERSION=false
 ARG UV_INSTALL_VERSION=false
+ARG FNM_INSTALL_VERSION=false
 ARG INSTALL_GITHUB_MIRROR=
 RUN set -eux; \
     arch="$(uname -m)"; \
     case "$arch" in \
-        x86_64) gh_arch="amd64"; uv_triple="x86_64-unknown-linux-gnu" ;; \
-        aarch64) gh_arch="arm64"; uv_triple="aarch64-unknown-linux-gnu" ;; \
+        x86_64) gh_arch="amd64"; uv_triple="x86_64-unknown-linux-gnu"; fnm_asset="fnm-linux" ;; \
+        aarch64) gh_arch="arm64"; uv_triple="aarch64-unknown-linux-gnu"; fnm_asset="fnm-arm64" ;; \
         *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
     esac; \
     if [ "$GH_INSTALL_VERSION" != "false" ]; then \
@@ -84,20 +85,7 @@ RUN set -eux; \
         install -m 0755 "/tmp/uv-${uv_triple}/uv" /usr/local/bin/uv; \
         install -m 0755 "/tmp/uv-${uv_triple}/uvx" /usr/local/bin/uvx; \
         rm -rf /tmp/uv.tgz "/tmp/uv-${uv_triple}"; \
-    fi
-
-# Optional Fast Node Manager (fnm) at build time, gated by FNM_INSTALL_VERSION:
-#   false | latest | pinned version (keeps v, e.g. v1.39.0).
-# Re-declare INSTALL_GITHUB_MIRROR for this RUN scope (declared above for the
-# opencode download).
-ARG FNM_INSTALL_VERSION=false
-ARG INSTALL_GITHUB_MIRROR=
-RUN set -eux; \
-    case "$(uname -m)" in \
-        x86_64) fnm_asset="fnm-linux" ;; \
-        aarch64) fnm_asset="fnm-arm64" ;; \
-        *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
-    esac; \
+    fi; \
     if [ "$FNM_INSTALL_VERSION" != "false" ]; then \
         if [ "$FNM_INSTALL_VERSION" = "latest" ]; then \
             tag="$(curl -fsSL "${INSTALL_GITHUB_MIRROR}https://api.github.com/repos/Schniz/fnm/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"; \
