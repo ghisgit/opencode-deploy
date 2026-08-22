@@ -19,7 +19,11 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 if ! getent group "$PGID" > /dev/null 2>&1; then
-    groupadd -g "$PGID" "$OPENCODE_USER"
+    if getent group "$OPENCODE_USER" > /dev/null 2>&1; then
+        groupmod -o -g "$PGID" "$OPENCODE_USER"
+    else
+        groupadd -o -g "$PGID" "$OPENCODE_USER"
+    fi
 fi
 
 if id "$OPENCODE_USER" > /dev/null 2>&1; then
