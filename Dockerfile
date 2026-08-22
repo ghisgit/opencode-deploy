@@ -27,6 +27,12 @@ RUN apt-get update \
         xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# Bake the opencode user/group (1000:1000, bash shell, home /data) so
+# devcontainers ("remoteUser": "opencode") and `docker run --user opencode`
+# work out of the box. entrypoint.sh still remaps PUID/PGID at runtime.
+RUN groupadd -o -g 1000 opencode \
+    && useradd -o -u 1000 -g 1000 -d /data -s /bin/bash opencode
+
 ARG OPENCODE_VERSION=latest
 ARG INSTALL_GITHUB_MIRROR=
 RUN set -eux; \

@@ -93,6 +93,10 @@ and published to GHCR as `ghcr.io/ghisgit/opencode-deploy`:
 - **Baked defaults**: `OPENCODE_VERSION=latest`, `GH_INSTALL_VERSION=latest`,
   `UV_INSTALL_VERSION=latest`, `FNM_INSTALL_VERSION=latest`, `CPP_INSTALL=full`.
   apt/GitHub mirrors are left empty (direct official sources).
+- **Baked user**: an `opencode` user/group (`1000:1000`, bash shell, home
+  `/data`) ships with the image, so dev containers (`"remoteUser": "opencode"`)
+  and `docker run --user opencode` work out of the box. Runtime `PUID`/`PGID`
+  still remap the ids via `entrypoint.sh` when they differ.
 - **Triggers**: every push to `main`, a daily check at **02:00 UTC** (schedule),
   plus a manual **Run workflow** button on the Actions page (where you can
   override any of the five build variables). Each run also tags `sha-<commit>` so
@@ -173,7 +177,8 @@ same container with VS Code:
 
 The devcontainer reuses `docker-compose.yml` and `docker-compose.override.yml`
 directly, so `PUID`/`PGID`, the `data/` mount points and the entrypoint are
-identical. VS Code attaches as the `opencode` user (created by `entrypoint.sh`),
+identical. VS Code attaches as the `opencode` user (baked into the image at
+build time; `entrypoint.sh` remaps its uid/gid when `PUID`/`PGID` differ),
 which writes to `/data` and `/workspace` with the mapped ownership instead of
 running as `root`.
 
