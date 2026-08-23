@@ -2,6 +2,8 @@
 .env.*
 .git
 .github
+.devcontainer
+.vscode
 data
 opencode
 workspace

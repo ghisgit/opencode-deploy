@@ -1,8 +1,7 @@
 services:
   opencode:
-    # Prebuilt multi-arch image from GHCR (amd64 + arm64). To build locally from
-    # ./Dockerfile with your .env build args, use docker-compose.override.yml
-    # (see docker-compose.override.example.yml).
+    # Prebuilt multi-arch image published by GitHub Actions. For local
+    # builds, add the build block from docker-compose.override.example.yml.
     image: ghcr.io/ghisgit/opencode-deploy:latest
     container_name: opencode
     restart: unless-stopped
@@ -10,6 +9,8 @@ services:
     ports:
       - "${PORT:-4096}:${PORT:-4096}"
     env_file:
+      # .env is optional; defaults below apply when it is absent.
+      # (requires Docker Compose v2.24+)
       - path: .env
         required: false
     environment:

@@ -27,11 +27,14 @@ if ! getent group "$PGID" > /dev/null 2>&1; then
 fi
 
 if id "$OPENCODE_USER" > /dev/null 2>&1; then
-    usermod -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
+    usermod -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
 else
     useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
 fi
 
-chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE"
+chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE" || \
+    echo "warning: chown failed for some paths under $HOME_DIR or $WORKSPACE (read-only mounts?)"
 
+# HOME=/data comes from the image ENV; gosu passes it down to the dropped-
+# privileges process, so no re-export is needed here.
 exec gosu "$PUID:$PGID" /usr/local/bin/opencode "$@"

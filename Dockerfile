@@ -2,16 +2,6 @@ FROM debian:bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Optional apt mirror (hostname only, e.g. mirrors.aliyun.com).
-# Replaces deb.debian.org in every apt source so the base and CPP installs
-# below use the mirror. Empty = official Debian sources.
-ARG APT_INSTALL_MIRROR=
-RUN if [ -n "$APT_INSTALL_MIRROR" ]; then \
-        for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.sources; do \
-            [ -f "$f" ] && sed -i "s|deb.debian.org|${APT_INSTALL_MIRROR}|g" "$f"; \
-        done; \
-    fi
-
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
@@ -19,113 +9,49 @@ RUN apt-get update \
         curl \
         git \
         gosu \
+        sudo \
         jq \
         procps \
         ripgrep \
         tar \
-        unzip \
         xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# Bake the opencode user/group (1000:1000, bash shell, home /data) so
-# devcontainers ("remoteUser": "opencode") and `docker run --user opencode`
-# work out of the box. entrypoint.sh still remaps PUID/PGID at runtime.
+# Bake the opencode user/group (1000:1000, bash shell, home /data) so dev
+# containers ("remoteUser": "opencode") and `docker run --user opencode` work
+# out of the box. entrypoint.sh still remaps PUID/PGID at runtime, so no
+# build args are needed. Passwordless sudo lets the agent escalate when needed.
 RUN groupadd -o -g 1000 opencode \
-    && useradd -o -u 1000 -g 1000 -d /data -s /bin/bash opencode
+    && useradd -o -u 1000 -g 1000 -d /data -s /bin/bash opencode \
+    && mkdir -p /data \
+    && chown opencode:opencode /data \
+    && usermod -aG sudo opencode \
+    && echo "opencode ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opencode \
+    && chmod 0440 /etc/sudoers.d/opencode
 
 ARG OPENCODE_VERSION=latest
-ARG INSTALL_GITHUB_MIRROR=
-RUN set -eux; \
-    case "$(uname -m)" in \
+# Pick the release asset matching the build arch (buildx/QEMU sets uname -m
+# per platform), so the same Dockerfile builds amd64 and arm64 images.
+RUN mkdir -p /tmp/opencode \
+    && case "$(uname -m)" in \
         x86_64) opencode_arch="x64" ;; \
         aarch64) opencode_arch="arm64" ;; \
         *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
-    esac; \
-    mkdir -p /opt/opencode \
-    && curl -fsSL -o /opt/opencode/opencode.tar.gz \
-        "${INSTALL_GITHUB_MIRROR}https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-${opencode_arch}.tar.gz" \
-    && tar -xzf /opt/opencode/opencode.tar.gz -C /opt/opencode \
-    && install -m 0755 /opt/opencode/opencode /usr/local/bin/opencode \
-    && rm -rf /opt/opencode \
+    esac \
+    && curl -fsSL -o /tmp/opencode/opencode.tar.gz \
+        "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-${opencode_arch}.tar.gz" \
+    && tar -xzf /tmp/opencode/opencode.tar.gz -C /tmp/opencode \
+    && install -m 0755 /tmp/opencode/opencode /usr/local/bin/opencode \
+    && rm -rf /tmp/opencode \
     && opencode --version
 
-ENV BROWSER=true
-
-# Optional GitHub CLI (gh), uv/uvx, and fnm installs at build time.
-# Values are controlled via build args from .env:
-#   false | latest | pinned version (gh and fnm keep v, uv strips leading v).
-# INSTALL_GITHUB_MIRROR (prepended to download URLs) is declared above so the
-# opencode download also uses it; it is re-declared here for this RUN scope.
-ARG GH_INSTALL_VERSION=false
-ARG UV_INSTALL_VERSION=false
-ARG FNM_INSTALL_VERSION=false
-ARG INSTALL_GITHUB_MIRROR=
-RUN set -eux; \
-    arch="$(uname -m)"; \
-    case "$arch" in \
-        x86_64) gh_arch="amd64"; uv_triple="x86_64-unknown-linux-gnu"; fnm_asset="fnm-linux" ;; \
-        aarch64) gh_arch="arm64"; uv_triple="aarch64-unknown-linux-gnu"; fnm_asset="fnm-arm64" ;; \
-        *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
-    esac; \
-    if [ "$GH_INSTALL_VERSION" != "false" ]; then \
-        if [ "$GH_INSTALL_VERSION" = "latest" ]; then \
-            tag="$(curl -fsSL "${INSTALL_GITHUB_MIRROR}https://api.github.com/repos/cli/cli/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"; \
-        else \
-            tag="$GH_INSTALL_VERSION"; \
-            case "$tag" in v*) ;; *) tag="v${tag}";; esac; \
-        fi; \
-        v="${tag#v}"; \
-        curl -fsSL -o /tmp/gh.tgz "${INSTALL_GITHUB_MIRROR}https://github.com/cli/cli/releases/download/${tag}/gh_${v}_linux_${gh_arch}.tar.gz"; \
-        tar -xzf /tmp/gh.tgz -C /tmp; \
-        install -m 0755 /tmp/gh_*/bin/gh /usr/local/bin/gh; \
-        rm -rf /tmp/gh.tgz /tmp/gh_*; \
-    fi; \
-    if [ "$UV_INSTALL_VERSION" != "false" ]; then \
-        if [ "$UV_INSTALL_VERSION" = "latest" ]; then \
-            tag="$(curl -fsSL "${INSTALL_GITHUB_MIRROR}https://api.github.com/repos/astral-sh/uv/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"; \
-        else \
-            tag="${UV_INSTALL_VERSION#v}"; \
-        fi; \
-        curl -fsSL -o /tmp/uv.tgz "${INSTALL_GITHUB_MIRROR}https://github.com/astral-sh/uv/releases/download/${tag}/uv-${uv_triple}.tar.gz"; \
-        tar -xzf /tmp/uv.tgz -C /tmp; \
-        install -m 0755 "/tmp/uv-${uv_triple}/uv" /usr/local/bin/uv; \
-        install -m 0755 "/tmp/uv-${uv_triple}/uvx" /usr/local/bin/uvx; \
-        rm -rf /tmp/uv.tgz "/tmp/uv-${uv_triple}"; \
-    fi; \
-    if [ "$FNM_INSTALL_VERSION" != "false" ]; then \
-        if [ "$FNM_INSTALL_VERSION" = "latest" ]; then \
-            tag="$(curl -fsSL "${INSTALL_GITHUB_MIRROR}https://api.github.com/repos/Schniz/fnm/releases/latest" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"; \
-        else \
-            tag="$FNM_INSTALL_VERSION"; \
-            case "$tag" in v*) ;; *) tag="v${tag}";; esac; \
-        fi; \
-        curl -fsSL -o /tmp/fnm.zip "${INSTALL_GITHUB_MIRROR}https://github.com/Schniz/fnm/releases/download/${tag}/${fnm_asset}.zip"; \
-        mkdir -p /tmp/fnm; \
-        unzip -q /tmp/fnm.zip -d /tmp/fnm; \
-        install -m 0755 "$(find /tmp/fnm -type f -name fnm | head -n1)" /usr/local/bin/fnm; \
-        rm -rf /tmp/fnm.zip /tmp/fnm; \
-        fnm --version; \
-    fi
-
-# Optional C/C++ toolchain at build time, gated by CPP_INSTALL:
-#   false | minimal | standard | full | true
-ARG CPP_INSTALL=false
-RUN if [ "$CPP_INSTALL" != "false" ]; then \
-        case "$CPP_INSTALL" in \
-            minimal)   pkgs="build-essential" ;; \
-            standard)  pkgs="build-essential gdb cmake ninja-build pkg-config" ;; \
-            true|full) pkgs="build-essential gdb cmake ninja-build pkg-config clang clangd llvm clang-tidy" ;; \
-            *) echo "unsupported CPP_INSTALL: $CPP_INSTALL" >&2; exit 1 ;; \
-        esac; \
-        apt-get update \
-        && apt-get install -y --no-install-recommends $pkgs \
-        && rm -rf /var/lib/apt/lists/*; \
-    fi
+ENV HOME=/data \
+    BROWSER=true
 
 WORKDIR /workspace
 
-# Bake the entrypoint into the image (not a runtime bind mount), so local and
-# CI builds both ship the entrypoint from the current tree.
+# Bake the entrypoint into the image (not a runtime bind mount), so local
+# builds ship the entrypoint from the current tree.
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

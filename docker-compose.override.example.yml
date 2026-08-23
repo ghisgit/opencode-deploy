@@ -1,40 +1,38 @@
 # Template for docker-compose.override.yml.
-# Copy to docker-compose.override.yml and adjust the per-file mounts:
+# Copy to docker-compose.override.yml and adjust locally:
 #   cp docker-compose.override.example.yml docker-compose.override.yml
-# docker compose auto-merges the override file with docker-compose.yml,
-# so the base file stays untouched.
 #
-# Do NOT mount the whole data/ directory over /data; mount individual files.
-# Add one volume line per file.
+# docker compose auto-merges this file with docker-compose.yml, so the base
+# file stays untouched. The override file is git-ignored (it references
+# personal files under data/), so create the mounted source files first —
+# a bind mount fails to start if its source does not exist.
 #
-# WARNING: never mount read-only (:ro) files under /data. entrypoint.sh runs
-# `chown -R` over /data on every start, so a :ro mount there fails the entrypoint
-# and, with `restart: unless-stopped`, causes an infinite restart loop. Keep
-# anything mounted under /data writable, and mount read-only files elsewhere
-# (e.g. under /etc or /opt).
+# Notes:
+# - Do NOT mount the whole data/ directory over /data; mount individual
+#   files instead, one volume line per file.
+# - The entrypoint runs `chown -R $PUID:$PGID /data /workspace` at startup:
+#   everything under those two paths gets remapped to the container user.
+#   Drop the :ro suffix for files the container must be able to write.
+#   Read-only mounts under /data or /workspace are tolerated (the chown
+#   warns and continues) but stay unwritable as their name implies.
+#   Mounts outside those paths, like /etc/profile.d below, are unaffected.
+#
+# Local builds: the base compose pulls ghcr.io/ghisgit/opencode-deploy:latest.
+# To build the image locally instead (e.g. when hacking on the Dockerfile),
+# keep the build block below — it overrides the pull and tags the result as
+# the same image name.
 services:
   opencode:
-    # Build locally from ./Dockerfile instead of pulling the prebuilt GHCR
-    # image. Comment out `build`/`image` to fall back to the prebuilt image.
-    # Build args come from .env (see .env.example).
     build:
       context: .
       args:
         OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
-        GH_INSTALL_VERSION: ${GH_INSTALL_VERSION:-false}
-        UV_INSTALL_VERSION: ${UV_INSTALL_VERSION:-false}
-        FNM_INSTALL_VERSION: ${FNM_INSTALL_VERSION:-false}
-        INSTALL_GITHUB_MIRROR: ${INSTALL_GITHUB_MIRROR:-}
-        APT_INSTALL_MIRROR: ${APT_INSTALL_MIRROR:-}
-        CPP_INSTALL: ${CPP_INSTALL:-false}
-    image: opencode:local
     volumes:
-      # Writable config under /data (no :ro suffix — required by entrypoint).
+      # Writable dotfiles persisted from data/
       - ./data/.npmrc:/data/.npmrc
       - ./data/.gitconfig:/data/.gitconfig
-      # Read-only files: mount outside /data, never under it.
-      - ./data/custom.sh:/etc/profile.d/custom.sh:ro
-
-      # Whole-repo bind mount for local development (repo files appear at
-      # /workspace/opencode-deploy inside the container).
+      # This repo itself, available inside the workspace
       - ./:/workspace/opencode-deploy
+      # Shell profile tweaks, sourced by login shells; safe as :ro because
+      # /etc is outside the chowned paths (/data and /workspace)
+      - ./data/custom.sh:/etc/profile.d/custom.sh:ro
