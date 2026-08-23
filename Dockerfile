@@ -39,7 +39,7 @@ RUN mkdir -p /tmp/opencode \
         *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
     esac \
     && curl -fsSL -o /tmp/opencode/opencode.tar.gz \
-        "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-${opencode_arch}.tar.gz" \
+        "https://github.com/anomalyco/opencode/releases/download/${OPENCODE_VERSION}/opencode-linux-${opencode_arch}.tar.gz" \
     && tar -xzf /tmp/opencode/opencode.tar.gz -C /tmp/opencode \
     && install -m 0755 /tmp/opencode/opencode /usr/local/bin/opencode \
     && rm -rf /tmp/opencode \
