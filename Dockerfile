@@ -1,10 +1,11 @@
-FROM debian:bookworm-slim
+FROM debian:12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         bash \
+        bash-completion \
         ca-certificates \
         curl \
         git \
@@ -16,6 +17,16 @@ RUN apt-get update \
         tar \
         xdg-utils \
     && rm -rf /var/lib/apt/lists/*
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV MISE_DATA_DIR="/mise"
+ENV MISE_CONFIG_DIR="/mise"
+ENV MISE_CACHE_DIR="/mise/cache"
+ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
+ENV PATH="/mise/shims:$PATH"
+RUN curl -fsSL https://mise.run | sh
+RUN mise trust -a && mise install
 
 # Bake the opencode user/group (1000:1000, bash shell, home /data) so dev
 # containers ("remoteUser": "opencode") and `docker run --user opencode` work
@@ -45,8 +56,9 @@ RUN mkdir -p /tmp/opencode \
     && rm -rf /tmp/opencode \
     && opencode --version
 
-ENV HOME=/data \
-    BROWSER=true
+# No global HOME: gosu resolves the dropped-privileges user's home from
+# /etc/passwd (/data), and the entrypoint exports HOME for both of its paths.
+ENV BROWSER=true
 
 WORKDIR /workspace
 
