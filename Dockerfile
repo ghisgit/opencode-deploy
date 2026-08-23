@@ -9,6 +9,7 @@ RUN apt-get update \
         curl \
         git \
         gosu \
+        sudo \
         jq \
         procps \
         ripgrep \
@@ -16,19 +17,36 @@ RUN apt-get update \
         xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
+# Bake the opencode user/group (1000:1000, bash shell, home /data) so dev
+# containers ("remoteUser": "opencode") and `docker run --user opencode` work
+# out of the box. entrypoint.sh still remaps PUID/PGID at runtime, so no
+# build args are needed. Passwordless sudo lets the agent escalate when needed.
+RUN groupadd -o -g 1000 opencode \
+    && useradd -o -u 1000 -g 1000 -d /data -s /bin/bash opencode \
+    && mkdir -p /data \
+    && chown opencode:opencode /data \
+    && usermod -aG sudo opencode \
+    && echo "opencode ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/opencode \
+    && chmod 0440 /etc/sudoers.d/opencode
+
 ARG OPENCODE_VERSION=latest
-RUN mkdir -p /opt/opencode \
-    && curl -fsSL -o /opt/opencode/opencode.tar.gz \
+RUN mkdir -p /tmp/opencode \
+    && curl -fsSL -o /tmp/opencode/opencode.tar.gz \
         "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-x64.tar.gz" \
-    && tar -xzf /opt/opencode/opencode.tar.gz -C /opt/opencode \
-    && install -m 0755 /opt/opencode/opencode /usr/local/bin/opencode \
-    && rm -rf /opt/opencode \
+    && tar -xzf /tmp/opencode/opencode.tar.gz -C /tmp/opencode \
+    && install -m 0755 /tmp/opencode/opencode /usr/local/bin/opencode \
+    && rm -rf /tmp/opencode \
     && opencode --version
 
 ENV HOME=/data \
     BROWSER=true
 
 WORKDIR /workspace
+
+# Bake the entrypoint into the image (not a runtime bind mount), so local
+# builds ship the entrypoint from the current tree.
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/" || exit 1
 

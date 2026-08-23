@@ -10,7 +10,7 @@ running in web mode, with persistent data on the host.
 | `opencode/` | `/data/.config/opencode`, `/data/.local/share/opencode`, `/data/.local/state/opencode`, `/data/.cache/opencode` | opencode's own persisted data (config, sessions, logs, cache) |
 | `data/` | file-by-file mounts (see below) | other project files you want available in the container home |
 | `workspace/` | `/workspace` | working directory for the web session |
-| `entrypoint.sh` | `/entrypoint.sh` | creates home dirs, maps `PUID`/`PGID` user, fixes ownership, drops privileges |
+| `entrypoint.sh` | `/entrypoint.sh` (baked into the image) | creates home dirs, maps `PUID`/`PGID` user, fixes ownership, drops privileges |
 | `docker-compose.override.example.yml` | — | template for `docker-compose.override.yml` (git-ignored) |
 
 ## Persisting files into the container home (`/data`)
@@ -48,16 +48,31 @@ exist.
 Files in `data/` are committed to git (only `.gitkeep` is tracked by default),
 while runtime state under `opencode/` is git-ignored.
 
+## Baked-in user and sudo
+
+The image ships a default `opencode` user (UID/GID `1000`, bash shell,
+`HOME=/data`) that is a member of the `sudo` group with passwordless sudo
+(`/etc/sudoers.d/opencode`, `NOPASSWD: ALL`). This makes devcontainers
+(`"remoteUser": "opencode"`) and `docker run --user opencode` work out of the
+box, and lets the agent escalate with `sudo` when needed.
+
+At startup the entrypoint still remaps the user/group to `PUID`/`PGID`
+(defaulting to `1000`) so persisted files on the host keep the right
+ownership — no build args required.
+
 ## Getting started
 
-1. Copy and adjust the environment file:
+1. (Optional) Copy and adjust the environment file:
 
    ```sh
    cp .env.example .env
    ```
 
-   Set `PUID`/`PGID` to match your host user (`id -u` / `id -g`) so persisted
+   `.env` is optional — sensible defaults apply when it is absent. If present,
+   set `PUID`/`PGID` to match your host user (`id -u` / `id -g`) so persisted
    files keep the right ownership.
+
+   Note: the optional `env_file` requires Docker Compose v2.24+.
 
 2. Build and start:
 
@@ -79,4 +94,4 @@ The container healthcheck probes the web server; the status is shown as
 | `PUID` / `PGID` | `1000` | Host user/group id the container runs as |
 | `DATA_DIR` | `./opencode` | Host directory holding opencode's persisted data |
 | `WORKSPACE` | `./workspace` | Host directory mounted at `/workspace` |
-| `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` | `opencode` / empty | Web server auth (empty password = unsecured) |
+| `OPENCODE_SERVER_USERNAME` / `OPENCODE_SERVER_PASSWORD` | `opencode` / `opencode` | Web server auth (change the password before exposing the port) |

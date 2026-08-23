@@ -4,7 +4,7 @@ set -euo pipefail
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 OPENCODE_USER="${OPENCODE_USER:-opencode}"
-HOME_DIR="${HOME:-/data}"
+HOME_DIR="/data"
 WORKSPACE="/workspace"
 
 mkdir -p \
@@ -19,16 +19,22 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 if ! getent group "$PGID" > /dev/null 2>&1; then
-    groupadd -g "$PGID" "$OPENCODE_USER"
+    if getent group "$OPENCODE_USER" > /dev/null 2>&1; then
+        groupmod -o -g "$PGID" "$OPENCODE_USER"
+    else
+        groupadd -o -g "$PGID" "$OPENCODE_USER"
+    fi
 fi
 
 if id "$OPENCODE_USER" > /dev/null 2>&1; then
     usermod -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
 else
-    useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" "$OPENCODE_USER"
+    useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
 fi
 
-chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE"
+chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE" 2>/dev/null || \
+    echo "warning: some files could not be chowned (read-only mounts?)"
 
-export HOME="$HOME_DIR"
+# HOME=/data comes from the image ENV; gosu passes it down to the dropped-
+# privileges process, so no re-export is needed here.
 exec gosu "$PUID:$PGID" /usr/local/bin/opencode "$@"

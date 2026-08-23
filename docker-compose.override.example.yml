@@ -1,13 +1,29 @@
 # Template for docker-compose.override.yml.
-# Copy to docker-compose.override.yml and adjust the per-file mounts:
+# Copy to docker-compose.override.yml and adjust locally:
 #   cp docker-compose.override.example.yml docker-compose.override.yml
-# docker compose auto-merges the override file with docker-compose.yml,
-# so the base file stays untouched.
 #
-# Do NOT mount the whole data/ directory over /data; mount individual files.
-# Add one volume line per file. Drop the :ro suffix for files the container
-# must be able to write.
+# docker compose auto-merges this file with docker-compose.yml, so the base
+# file stays untouched. The override file is git-ignored (it references
+# personal files under data/), so create the mounted source files first —
+# a bind mount fails to start if its source does not exist.
+#
+# Notes:
+# - Do NOT mount the whole data/ directory over /data; mount individual
+#   files instead, one volume line per file.
+# - The entrypoint runs `chown -R $PUID:$PGID /data /workspace` at startup:
+#   everything under those two paths gets remapped to the container user.
+#   Drop the :ro suffix for files the container must be able to write.
+#   Read-only mounts under /data or /workspace are tolerated (the chown
+#   warns and continues) but stay unwritable as their name implies.
+#   Mounts outside those paths, like /etc/profile.d below, are unaffected.
 services:
   opencode:
     volumes:
-      - ./data/.gitconfig:/data/.gitconfig:ro
+      # Writable dotfiles persisted from data/
+      - ./data/.npmrc:/data/.npmrc
+      - ./data/.gitconfig:/data/.gitconfig
+      # This repo itself, available inside the workspace
+      - ./:/workspace/opencode-deploy
+      # Shell profile tweaks, sourced by login shells; safe as :ro because
+      # /etc is outside the chowned paths (/data and /workspace)
+      - ./data/custom.sh:/etc/profile.d/custom.sh:ro
