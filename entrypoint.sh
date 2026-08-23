@@ -32,8 +32,8 @@ else
     useradd -o -u "$PUID" -g "$PGID" -d "$HOME_DIR" -s /bin/bash "$OPENCODE_USER"
 fi
 
-chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE" 2>/dev/null || \
-    echo "warning: some files could not be chowned (read-only mounts?)"
+chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE" || \
+    echo "warning: chown failed for some paths under $HOME_DIR or $WORKSPACE (read-only mounts?)"
 
 # HOME=/data comes from the image ENV; gosu passes it down to the dropped-
 # privileges process, so no re-export is needed here.

@@ -18,6 +18,14 @@
   "service": "opencode",
   "workspaceFolder": "/workspace",
 
+  // Runs on the host in the opened repo root before the container is created:
+  // docker-compose.override.yml is git-ignored, so on a fresh clone the
+  // dockerComposeFile reference above would fail. The array form resolves
+  // platform-appropriately: ./initialize (POSIX sh) on Linux/macOS hosts,
+  // initialize.cmd (batch) on Windows. Both create an empty stub when the
+  // override file is missing; Compose v2 merges an empty file as a no-op.
+  "initializeCommand": [".devcontainer/initialize"],
+
   // The entrypoint already remaps UID/GID at runtime via PUID/PGID (.env);
   // keep Dev Containers from applying its own second UID rewrite.
   "updateRemoteUserUID": false,

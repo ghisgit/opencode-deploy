@@ -141,7 +141,10 @@ What you get:
   VS Code port forwarding needed.
 - Your `docker-compose.override.yml` is applied too — Dev Containers does not
   load it automatically, so it is referenced explicitly in
-  `.devcontainer/devcontainer.json`.
+  `.devcontainer/devcontainer.json`. The file is git-ignored; a cross-platform
+  `initializeCommand` (shell script on Linux/macOS hosts, `.cmd` batch file on
+  Windows) creates an empty stub on a fresh clone so the dev container opens
+  out of the box.
 - UID/GID mapping is handled by `PUID`/`PGID` exactly as in normal operation;
   Dev Containers' own UID rewrite is disabled to avoid double remapping.
 
