@@ -74,16 +74,44 @@ ownership — no build args required.
 
    Note: the optional `env_file` requires Docker Compose v2.24+.
 
-2. Build and start:
+2. Start:
 
    ```sh
    docker compose up -d
    ```
 
+   By default this pulls the prebuilt image from GHCR (see below). To build
+   the image locally instead, copy `docker-compose.override.example.yml` to
+   `docker-compose.override.yml` — its template includes the build block.
+
 3. Open `http://localhost:4096`.
 
 The container healthcheck probes the web server; the status is shown as
 `(healthy)` in `docker ps`.
+
+## Prebuilt images (GHCR)
+
+GitHub Actions publishes multi-arch images (`linux/amd64`, `linux/arm64`) to
+`ghcr.io/ghisgit/opencode-deploy`. Tags:
+
+| Tag | Meaning |
+|---|---|
+| `latest` | Most recent build |
+| `<version>` (e.g. `1.18.15`) | Pinned opencode release; stable for rollbacks |
+| `sha-<short>` | Exact git commit the image was built from |
+
+When builds run:
+
+- on every push to `main`
+- manually via **Run workflow**, optionally pinning `OPENCODE_VERSION`
+- daily at 02:00 UTC — skipped when the resolved opencode version is already
+  published
+
+Pull a specific version manually:
+
+```sh
+docker pull ghcr.io/ghisgit/opencode-deploy:<version>
+```
 
 ## Developing with VS Code (Dev Containers)
 
@@ -125,7 +153,7 @@ stops the web server too — it is the same service.
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `4096` | Web server port (host:container) |
-| `OPENCODE_VERSION` | `latest` | opencode version to install, e.g. `v1.18.14` |
+| `OPENCODE_VERSION` | `latest` | opencode version for local image builds, e.g. `v1.18.14` |
 | `PUID` / `PGID` | `1000` | Host user/group id the container runs as |
 | `DATA_DIR` | `./opencode` | Host directory holding opencode's persisted data |
 | `WORKSPACE` | `./workspace` | Host directory mounted at `/workspace` |

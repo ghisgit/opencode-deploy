@@ -16,8 +16,17 @@
 #   Read-only mounts under /data or /workspace are tolerated (the chown
 #   warns and continues) but stay unwritable as their name implies.
 #   Mounts outside those paths, like /etc/profile.d below, are unaffected.
+#
+# Local builds: the base compose pulls ghcr.io/ghisgit/opencode-deploy:latest.
+# To build the image locally instead (e.g. when hacking on the Dockerfile),
+# keep the build block below — it overrides the pull and tags the result as
+# the same image name.
 services:
   opencode:
+    build:
+      context: .
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
     volumes:
       # Writable dotfiles persisted from data/
       - ./data/.npmrc:/data/.npmrc

@@ -30,9 +30,16 @@ RUN groupadd -o -g 1000 opencode \
     && chmod 0440 /etc/sudoers.d/opencode
 
 ARG OPENCODE_VERSION=latest
+# Pick the release asset matching the build arch (buildx/QEMU sets uname -m
+# per platform), so the same Dockerfile builds amd64 and arm64 images.
 RUN mkdir -p /tmp/opencode \
+    && case "$(uname -m)" in \
+        x86_64) opencode_arch="x64" ;; \
+        aarch64) opencode_arch="arm64" ;; \
+        *) echo "unsupported arch: $(uname -m)" >&2; exit 1 ;; \
+    esac \
     && curl -fsSL -o /tmp/opencode/opencode.tar.gz \
-        "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-x64.tar.gz" \
+        "https://github.com/anomalyco/opencode/releases/${OPENCODE_VERSION}/download/opencode-linux-${opencode_arch}.tar.gz" \
     && tar -xzf /tmp/opencode/opencode.tar.gz -C /tmp/opencode \
     && install -m 0755 /tmp/opencode/opencode /usr/local/bin/opencode \
     && rm -rf /tmp/opencode \

@@ -1,0 +1,88 @@
+name: build-image
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Daily at 02:00 UTC; picks up new opencode releases.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      OPENCODE_VERSION:
+        description: opencode version to install (latest or pinned, e.g. v1.18.15)
+        required: false
+        default: latest
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/ghisgit/opencode-deploy
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve opencode version
+        id: resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ inputs.OPENCODE_VERSION || 'latest' }}"
+          if [ "$version" = "latest" ]; then
+            tag="$(gh api repos/anomalyco/opencode/releases/latest --jq .tag_name)"
+          else
+            tag="$version"
+            case "$tag" in v*) ;; *) tag="v${tag}";; esac
+          fi
+          echo "resolved=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if version already published
+        id: skip
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          if docker buildx imagetools inspect "${IMAGE}:${{ steps.resolve.outputs.version }}" > /dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest
+            type=raw,value=${{ steps.resolve.outputs.version }}
+
+      - name: Build and push multi-arch image
+        if: steps.skip.outputs.skip != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            OPENCODE_VERSION=${{ steps.resolve.outputs.resolved }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

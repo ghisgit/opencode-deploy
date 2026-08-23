@@ -1,10 +1,8 @@
 services:
   opencode:
-    build:
-      context: .
-      args:
-        OPENCODE_VERSION: ${OPENCODE_VERSION:-latest}
-    image: opencode:local
+    # Prebuilt multi-arch image published by GitHub Actions. For local
+    # builds, add the build block from docker-compose.override.example.yml.
+    image: ghcr.io/ghisgit/opencode-deploy:latest
     container_name: opencode
     restart: unless-stopped
     init: true
