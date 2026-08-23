@@ -1,0 +1,31 @@
+// VS Code Dev Containers configuration.
+//
+// Reuses the existing compose files. The override must be listed explicitly —
+// Dev Containers does not load docker-compose.override.yml automatically.
+// The container stays alive because the opencode web server keeps running,
+// so there is no need to override the command (the entrypoint hardcodes the
+// opencode binary, so a "sleep infinity" command would not work anyway).
+// The web port needs no VS Code forwarding: docker-compose.yml already
+// publishes it on the host (${PORT:-4096}).
+//
+// Requires Docker Compose v2.24+ for the optional env_file in docker-compose.yml.
+{
+  "name": "opencode",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.override.yml"
+  ],
+  "service": "opencode",
+  "workspaceFolder": "/workspace",
+
+  // The entrypoint already remaps UID/GID at runtime via PUID/PGID (.env);
+  // keep Dev Containers from applying its own second UID rewrite.
+  "updateRemoteUserUID": false,
+  "remoteUser": "opencode",
+
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  }
+}

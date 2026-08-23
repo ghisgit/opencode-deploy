@@ -85,6 +85,41 @@ ownership — no build args required.
 The container healthcheck probes the web server; the status is shown as
 `(healthy)` in `docker ps`.
 
+## Developing with VS Code (Dev Containers)
+
+The repo ships a `.devcontainer/devcontainer.json` that attaches VS Code to
+the same compose project used for deployment — same image, volumes, and
+`.env` settings.
+
+Prerequisites:
+
+- [VS Code](https://code.visualstudio.com/) with the
+  [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+  extension
+- Docker Compose v2.24+ (for the optional `env_file`, as above)
+
+Usage:
+
+1. (Optional) Create `.env` as described in [Getting started](#getting-started).
+2. Open this folder in VS Code and run **Dev Containers: Reopen in Container**
+   from the command palette (`F1`).
+
+What you get:
+
+- A shell/editor session in `/workspace` as the baked `opencode` user, with
+  passwordless `sudo` available.
+- The running opencode web server is reachable directly at
+  `http://localhost:${PORT:-4096}` via compose's own port publishing — no
+  VS Code port forwarding needed.
+- Your `docker-compose.override.yml` is applied too — Dev Containers does not
+  load it automatically, so it is referenced explicitly in
+  `.devcontainer/devcontainer.json`.
+- UID/GID mapping is handled by `PUID`/`PGID` exactly as in normal operation;
+  Dev Containers' own UID rewrite is disabled to avoid double remapping.
+
+Note: stopping the dev container (e.g. **Dev Containers: Stop Container**)
+stops the web server too — it is the same service.
+
 ## Configuration (`.env`)
 
 | Variable | Default | Description |
