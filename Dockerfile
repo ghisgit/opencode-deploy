@@ -9,13 +9,13 @@ RUN apt-get update \
         ca-certificates \
         curl \
         git \
+        gnupg \
         gosu \
         sudo \
         jq \
         procps \
         ripgrep \
         tar \
-        xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -26,7 +26,6 @@ ENV MISE_CACHE_DIR="/mise/cache"
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 ENV PATH="/mise/shims:$PATH"
 RUN curl -fsSL https://mise.run | sh
-RUN mise trust -a && mise install
 
 # Bake the opencode user/group (1000:1000, bash shell, home /data) so dev
 # containers ("remoteUser": "opencode") and `docker run --user opencode` work
@@ -67,7 +66,7 @@ WORKDIR /workspace
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/api/health" | jq -e '.healthy == true' > /dev/null || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["web", "--hostname", "0.0.0.0", "--port", "4096"]
