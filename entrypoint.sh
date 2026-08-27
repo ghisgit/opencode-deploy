@@ -21,7 +21,7 @@ export HOME="$HOME_DIR"
 
 # Install any tools declared in .mise.toml before handing control to opencode.
 mise_install() {
-    mise install || echo "warning: mise install failed"
+    mise install >/dev/null 2>&1 || echo "warning: mise install failed"
 }
 
 if [ "$(id -u)" != "0" ]; then

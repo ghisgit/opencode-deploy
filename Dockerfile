@@ -16,7 +16,8 @@ RUN apt-get update \
         procps \
         ripgrep \
         tar \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /usr/share/doc /usr/share/man
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
