@@ -19,7 +19,13 @@ mkdir -p \
 # also covers arbitrary `--user <uid>` starts with no passwd entry.
 export HOME="$HOME_DIR"
 
+# Install any tools declared in .mise.toml before handing control to opencode.
+mise_install() {
+    mise install || echo "warning: mise install failed"
+}
+
 if [ "$(id -u)" != "0" ]; then
+    mise_install
     exec opencode "$@"
 fi
 
@@ -43,5 +49,7 @@ chown -R "$PUID:$PGID" "$HOME_DIR" "$WORKSPACE" || \
 # Hand the mise dir (tools installed at build time as root) to the runtime
 # user so `mise install` works without sudo.
 chown -R "$PUID:$PGID" "$MISE_DATA_DIR"
+
+mise_install
 
 exec gosu "$PUID:$PGID" /usr/local/bin/opencode "$@"
