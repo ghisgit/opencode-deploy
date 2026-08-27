@@ -19,10 +19,11 @@
 #
 # Local builds: the base compose pulls ghcr.io/ghisgit/opencode-deploy:latest.
 # To build the image locally instead (e.g. when hacking on the Dockerfile),
-# keep the build block below — it overrides the pull and tags the result as
-# the same image name.
+# keep the build block below. It overrides the pull and tags the result with
+# a distinct local name so it never collides with the published GHCR image.
 services:
   opencode:
+    image: ${LOCAL_IMAGE:-opencode-deploy:local}
     build:
       context: .
       args:

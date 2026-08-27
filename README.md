@@ -83,6 +83,8 @@ ownership — no build args required.
    By default this pulls the prebuilt image from GHCR (see below). To build
    the image locally instead, copy `docker-compose.override.example.yml` to
    `docker-compose.override.yml` — its template includes the build block.
+   Local builds are tagged `opencode-deploy:local` (override via
+   `LOCAL_IMAGE`) so they never collide with the published GHCR image.
 
 3. Open `http://localhost:4096`.
 
