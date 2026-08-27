@@ -159,6 +159,7 @@ stops the web server too — it is the same service.
 |---|---|---|
 | `PORT` | `4096` | Web server port (host:container) |
 | `OPENCODE_VERSION` | `latest` | opencode version for local image builds, e.g. `v1.18.14` |
+| `LOCAL_IMAGE` | `opencode-deploy:local` | Image tag for local builds (see `docker-compose.override.example.yml`) |
 | `PUID` / `PGID` | `1000` | Host user/group id the container runs as |
 | `DATA_DIR` | `./opencode` | Host directory holding opencode's persisted data |
 | `WORKSPACE` | `./workspace` | Host directory mounted at `/workspace` |
