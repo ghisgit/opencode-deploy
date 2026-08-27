@@ -55,10 +55,6 @@ RUN mkdir -p /tmp/opencode \
     && rm -rf /tmp/opencode \
     && opencode --version
 
-# No global HOME: gosu resolves the dropped-privileges user's home from
-# /etc/passwd (/data), and the entrypoint exports HOME for both of its paths.
-ENV BROWSER=true
-
 WORKDIR /workspace
 
 # Bake the entrypoint into the image (not a runtime bind mount), so local
@@ -69,4 +65,4 @@ RUN chmod +x /entrypoint.sh
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -fsS "http://127.0.0.1:${PORT:-4096}/api/health" | jq -e '.healthy == true' > /dev/null || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["web", "--hostname", "0.0.0.0", "--port", "4096"]
+CMD ["serve", "--hostname", "0.0.0.0", "--port", "4096"]
